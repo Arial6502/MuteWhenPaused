@@ -1,5 +1,4 @@
 #include "Logger.hpp"
-#include "Util/Text/Text.hpp"
 #include "Util/Windows/MessageBox.hpp"
 
 namespace {
@@ -59,7 +58,7 @@ namespace {
 	#define STK "\033[9m"   //Strikethrough
 
 	//Logger Fmt
-	#define LOG_HDR "[" BCYA "PLUG" WHT "]"
+	#define LOG_HDR "[" BRED "MLSWP" WHT "]"
 
 
 	constexpr const char* PatternDefault = "[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%#] %v";
@@ -83,56 +82,26 @@ namespace SKSE::log {
 		std::shared_ptr <spdlog::logger> logger;
 
 		if (HasConsole()) {
-			auto sink = std::make_shared<spdlog::sinks::stdout_sink_st>();
-
-			spdlog::init_thread_pool(8192, 1);
-
-			logger = std::make_shared<spdlog::async_logger>("Global", sink, spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
-
+			auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+			logger = std::make_shared<spdlog::logger>("Global", sink);
 			logger->set_pattern(PatternConsole);
-			logger->flush_on(spdlog::level::off);
 		}
 		/*else if (IsDebuggerPresent()) {
 			logger = std::make_shared <spdlog::logger>("Global", std::make_shared <spdlog::sinks::msvc_sink_mt>());
 			logger->set_pattern(PatternDefault);
 		}*/
 		else {
-			logger = std::make_shared<spdlog::logger>(
-				"Global",
-				std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-					path->string(), true));
-
+			logger = std::make_shared<spdlog::logger>("Global",std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true));
 			logger->set_pattern(PatternDefault);
-			logger->flush_on(spdlog::level::err);
 		}
 
 		spdlog::set_default_logger(std::move(logger));
-		SetLevel(HasConsole() ? spdlog::level::trace : spdlog::level::info);
+		SetLevel(spdlog::level::trace);
 	}
 
 	void SetLevel(spdlog::level::level_enum a_level) {
 		spdlog::set_level(a_level);
+		spdlog::flush_on(a_level);
 	}
 
-	void SetLevel(const char* a_level) {
-
-		const auto to_level_enum = [](const char* levelStr) -> std::optional<spdlog::level::level_enum> {
-			using enum spdlog::level::level_enum;
-
-			std::string lower = Util::Text::ToLower(levelStr);
-			if (lower == "off")                         return off;
-			if (lower == "trace")                       return trace;
-			if (lower == "debug")                       return debug;
-			if (lower == "info")                        return info;
-			if (lower == "warning" || lower == "warn")  return warn;
-			if (lower == "error" || lower == "err")     return err;
-			if (lower == "critical")                    return critical;
-
-			return std::nullopt;
-		};
-
-		if (const auto level = to_level_enum(a_level)) {
-			SetLevel(*level);
-		}
-	}
 }

@@ -6,7 +6,7 @@ cmake_policy(VERSION 3.21...3.31)
 # #######################################################################################################################
 
 project(
-	Plugin
+	MLSWP #Mute Looping Sounds When Paused.
 	VERSION 1.0.0.0
 	DESCRIPTION ""
 	LANGUAGES CXX
@@ -56,7 +56,7 @@ include(xSEPlugin)
 # # Find dependencies - VCPKG Ports
 # #######################################################################################################################
 
-find_path(CLIBUTIL_INCLUDE_DIRS "ClibUtil/Utils.hpp")
+#find_path(CLIBUTIL_INCLUDE_DIRS "ClibUtil/Utils.hpp")
 
 # #######################################################################################################################
 # # Find dependencies - VCPKG Other
@@ -68,25 +68,13 @@ find_library(DETOURS_LIBRARY detours REQUIRED)
 # #######################################################################################################################
 # # Find dependencies - Git
 # #######################################################################################################################
-include(FetchContent)
-
-# Reflect (fork of https://github.com/qlibs/reflect)
-FetchContent_Declare(
-    boost_ext_reflect
-    GIT_REPOSITORY https://github.com/BingusEx/reflect/
-    GIT_SHALLOW ON
-    GIT_TAG ab2bad2e5600e0890380f0226412d91ffaed3c39
-)
-FetchContent_MakeAvailable(boost_ext_reflect)
-# Skip the self tests reflect runs on every inclusion.
-target_compile_definitions(${PROJECT_NAME} PRIVATE NTEST)
+#include(FetchContent)
 
 # #######################################################################################################################
 # # Find dependencies - VCPKG
 # #######################################################################################################################
 find_package(xbyak CONFIG REQUIRED)
 find_package(SimpleIni CONFIG REQUIRED)
-find_package(absl CONFIG REQUIRED)
 
 # #######################################################################################################################
 # # Non-CLib Includes
@@ -95,9 +83,9 @@ find_package(absl CONFIG REQUIRED)
 target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
-	${CLIBUTIL_INCLUDE_DIRS}
+#	${CLIBUTIL_INCLUDE_DIRS}
 	${DETOURS_INCLUDE_DIRS}
-	${boost_ext_reflect_SOURCE_DIR}
+#	${boost_ext_reflect_SOURCE_DIR}
 	${hde64_SOURCE_DIR}/src/hde
 )
 
@@ -107,13 +95,6 @@ target_link_libraries(
     ${DETOURS_LIBRARY}
 	xbyak::xbyak
 	SimpleIni::SimpleIni
-	absl::base
-	absl::flat_hash_map
-	absl::flat_hash_set
-	absl::node_hash_map
-	absl::node_hash_set
-	absl::btree
-	absl::inlined_vector
 )
 
 # #######################################################################################################################

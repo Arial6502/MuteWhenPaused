@@ -49,13 +49,94 @@ namespace Hooks {
 		};
 	}
 
-	struct RelocationEx : detail::PerEpoch<std::uint64_t> {
+	class RelocationIDEx : public detail::PerEpoch<std::uint64_t> {
+	public:
 		using detail::PerEpoch<std::uint64_t>::PerEpoch;
+
+		[[nodiscard]] std::uint64_t id() const noexcept {
+			return Get(CurrentEpoch());
+		}
+
+		[[nodiscard]] std::size_t offset() const {
+			const auto id = this->id();
+			return id ? REL::IDDB::get().id2offset(id) : 0;
+		}
+
+		[[nodiscard]] std::uintptr_t address() const {
+			const auto offset = this->offset();
+			return offset ? REL::Module::get().base() + offset : 0;
+		}
+
+		[[nodiscard]] explicit operator REL::ID() const noexcept {
+			return REL::ID(id());
+		}
+
+		operator REL::RelocationID() const noexcept {
+			const auto id = this->id();
+			return REL::RelocationID(id, id, id);
+		}
 	};
 
-	//Byte offsets added to the RelocationEx address, same order and fallbacks.
-	struct OffsetEx : detail::PerEpoch<std::size_t> {
+	class OffsetEx : public detail::PerEpoch<std::size_t> {
+	public:
 		using detail::PerEpoch<std::size_t>::PerEpoch;
+
+		[[nodiscard]] std::size_t offset() const noexcept {
+			return Get(CurrentEpoch());
+		}
+
+		[[nodiscard]] std::uintptr_t address() const {
+			const auto offset = this->offset();
+			return offset ? REL::Module::get().base() + offset : 0;
+		}
+
+		operator REL::VariantOffset() const noexcept {
+			const auto offset = this->offset();
+			return REL::VariantOffset(offset, offset, offset);
+		}
+	};
+
+	class VariantIDEx {
+	public:
+		constexpr VariantIDEx() noexcept = default;
+		constexpr VariantIDEx(std::uint64_t a_15, std::uint64_t a_16) noexcept : m_values(a_15, a_16, a_16, 0) {}
+		constexpr VariantIDEx(std::uint64_t a_15, std::uint64_t a_16, std::uint64_t a_17) noexcept : m_values(a_15, a_16, a_17, 0) {}
+		constexpr VariantIDEx(std::uint64_t a_15, std::uint64_t a_16, std::uint64_t a_17, std::uint64_t a_vrOffset) noexcept : m_values(a_15, a_16, a_17, a_vrOffset) {}
+
+		[[nodiscard]] std::size_t offset() const {
+			const auto epoch = CurrentEpoch();
+			const auto value = m_values.Get(epoch);
+			if (epoch == Epoch::kVR) {
+				return value;
+			}
+			return value ? REL::IDDB::get().id2offset(value) : 0;
+		}
+
+		[[nodiscard]] std::uintptr_t address() const {
+			const auto offset = this->offset();
+			return offset ? REL::Module::get().base() + offset : 0;
+		}
+
+		operator REL::VariantID() const noexcept {
+			const auto epoch = CurrentEpoch();
+			const auto value = m_values.Get(epoch);
+			return epoch == Epoch::kVR ? REL::VariantID(0, 0, value) : REL::VariantID(value, value, 0);
+		}
+
+	private:
+		detail::PerEpoch<std::uint64_t> m_values;
+	};
+
+
+	template <class T>
+	concept AddressSource = requires(const T& a_source) {
+		{ a_source.address() } -> std::convertible_to<std::uintptr_t>;
+	};
+
+	
+	template <class T>
+	concept OffsetSource = std::integral<T> || requires(const T& a_offset) {
+		{ a_offset.offset() } -> std::convertible_to<std::size_t>;
 	};
 
 	//Restricts a hook to one epoch or one exact game version (major.minor.patch). Default: every runtime.

@@ -10,11 +10,9 @@
         "rapidcsv",
         "directxtk",
         "spdlog",
-        "clib-util",
         "detours",
         "xbyak",
-        "simpleini",
-        "abseil"
+        "simpleini"
       ]
     }
   },

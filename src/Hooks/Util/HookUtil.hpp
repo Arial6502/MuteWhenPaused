@@ -12,12 +12,15 @@
 
 //Every hook takes its target in one of these forms:
 //	(std::uintptr_t)                               absolute address
-//	(RelocationEx, OffsetEx = {}, When = {})       per runtime IDs (1.5, 1.6, 1.7, VR), optionally limited by When
-//	(RelocationEx, When)                           same, no offset
+//	(Id, Offset = {}, When = {})                   Id is any AddressSource (RelocationIDEx, VariantIDEx, REL::ID,
+//	                                               REL::RelocationID, REL::VariantID, ...), Offset any OffsetSource
+//	                                               (OffsetEx, REL::Offset, REL::VariantOffset, an integer)
+//	(Id, When)                                     same, no offset
 //When converts from an Epoch or a REL::Version:
-//	stl::write_call<Hook>(RelocationEx(1, 2, 3, 4), OffsetEx(1, 2, 3, 4));
-//	stl::write_call<Hook>(RelocationEx(3), OffsetEx(3), Epoch::k1_7);
-//	stl::write_call<Hook>(RelocationEx(3), OffsetEx(3), SKSE::RUNTIME_SSE_1_7_104);
+//	stl::write_call<Hook>(RelocationIDEx(1, 2, 3, 4), OffsetEx(1, 2, 3, 4));
+//	stl::write_call<Hook>(RelocationIDEx(3), OffsetEx(3), Epoch::k1_7);
+//	stl::write_call<Hook>(RelocationIDEx(3), OffsetEx(3), SKSE::RUNTIME_SSE_1_7_104);
+//	stl::write_call<Hook>(REL::RelocationID(35565, 36564), REL::VariantOffset(0x748, 0xC26, 0));
 //A hook that does not apply to the running game is skipped and logged.
 //
 //Unique hooks: template the hook struct on an int so each instantiation owns its thunk and func.
@@ -196,14 +199,14 @@ namespace Hooks::stl {
 		detail::WriteCall<T, Size>(Resolve(a_address));
 	}
 
-	template <class T, std::size_t Size = 5>
-	void write_call(const RelocationEx& a_id, const OffsetEx& a_offset = {}, const When& a_when = {}) {
+	template <class T, std::size_t Size = 5, AddressSource Id, OffsetSource Off = OffsetEx>
+	void write_call(const Id& a_id, const Off& a_offset = {}, const When& a_when = {}) {
 		detail::WriteCall<T, Size>(Resolve(a_id, a_offset, a_when));
 	}
 
-	template <class T, std::size_t Size = 5>
-	void write_call(const RelocationEx& a_id, const When& a_when) {
-		detail::WriteCall<T, Size>(Resolve(a_id, {}, a_when));
+	template <class T, std::size_t Size = 5, AddressSource Id>
+	void write_call(const Id& a_id, const When& a_when) {
+		detail::WriteCall<T, Size>(Resolve(a_id, 0, a_when));
 	}
 
 	template <template <int> class T, int ID, std::size_t Size = 5, class... Args>
@@ -219,14 +222,14 @@ namespace Hooks::stl {
 		detail::WriteJmp<T, Size>(Resolve(a_address));
 	}
 
-	template <class T, std::size_t Size = 5>
-	void write_jmp(const RelocationEx& a_id, const OffsetEx& a_offset = {}, const When& a_when = {}) {
+	template <class T, std::size_t Size = 5, AddressSource Id, OffsetSource Off = OffsetEx>
+	void write_jmp(const Id& a_id, const Off& a_offset = {}, const When& a_when = {}) {
 		detail::WriteJmp<T, Size>(Resolve(a_id, a_offset, a_when));
 	}
 
-	template <class T, std::size_t Size = 5>
-	void write_jmp(const RelocationEx& a_id, const When& a_when) {
-		detail::WriteJmp<T, Size>(Resolve(a_id, {}, a_when));
+	template <class T, std::size_t Size = 5, AddressSource Id>
+	void write_jmp(const Id& a_id, const When& a_when) {
+		detail::WriteJmp<T, Size>(Resolve(a_id, 0, a_when));
 	}
 
 	template <template <int> class T, int ID, std::size_t Size = 5, class... Args>
@@ -251,9 +254,9 @@ namespace Hooks::stl {
 		detail::WriteVfunc<T>(Resolve(a_vtable));
 	}
 
-	template <class T>
-	void write_vfunc(const RelocationEx& a_vtableId, const When& a_when = {}) {
-		detail::WriteVfunc<T>(Resolve(a_vtableId, {}, a_when));
+	template <class T, AddressSource Id>
+	void write_vfunc(const Id& a_vtableId, const When& a_when = {}) {
+		detail::WriteVfunc<T>(Resolve(a_vtableId, 0, a_when));
 	}
 
 	template <template <int> class T, int ID, class... Args>
@@ -278,14 +281,14 @@ namespace Hooks::stl {
 		detail::WriteDetour<T>(Resolve(a_address));
 	}
 
-	template <class T>
-	void write_detour(const RelocationEx& a_id, const OffsetEx& a_offset = {}, const When& a_when = {}) {
+	template <class T, AddressSource Id, OffsetSource Off = OffsetEx>
+	void write_detour(const Id& a_id, const Off& a_offset = {}, const When& a_when = {}) {
 		detail::WriteDetour<T>(Resolve(a_id, a_offset, a_when));
 	}
 
-	template <class T>
-	void write_detour(const RelocationEx& a_id, const When& a_when) {
-		detail::WriteDetour<T>(Resolve(a_id, {}, a_when));
+	template <class T, AddressSource Id>
+	void write_detour(const Id& a_id, const When& a_when) {
+		detail::WriteDetour<T>(Resolve(a_id, 0, a_when));
 	}
 
 	template <template <int> class T, int ID, class... Args>
@@ -301,14 +304,14 @@ namespace Hooks::stl {
 		detail::WriteCave<T>(Resolve(a_address));
 	}
 
-	template <class T>
-	void write_xbyak_thunk(const RelocationEx& a_id, const OffsetEx& a_offset = {}, const When& a_when = {}) {
+	template <class T, AddressSource Id, OffsetSource Off = OffsetEx>
+	void write_xbyak_thunk(const Id& a_id, const Off& a_offset = {}, const When& a_when = {}) {
 		detail::WriteCave<T>(Resolve(a_id, a_offset, a_when));
 	}
 
-	template <class T>
-	void write_xbyak_thunk(const RelocationEx& a_id, const When& a_when) {
-		detail::WriteCave<T>(Resolve(a_id, {}, a_when));
+	template <class T, AddressSource Id>
+	void write_xbyak_thunk(const Id& a_id, const When& a_when) {
+		detail::WriteCave<T>(Resolve(a_id, 0, a_when));
 	}
 
 	//----- safe_write: write a trivially copyable value (a std::array of bytes, a float, ...). With a_expected the
@@ -322,13 +325,13 @@ namespace Hooks::stl {
 		return detail::SafeWrite(Resolve(a_address), std::addressof(a_data), sizeof(T), a_expected);
 	}
 
-	template <Payload T>
-	bool safe_write(const RelocationEx& a_id, const OffsetEx& a_offset, const T& a_data, std::span<const std::uint8_t> a_expected = {}) {
+	template <AddressSource Id, OffsetSource Off, Payload T>
+	bool safe_write(const Id& a_id, const Off& a_offset, const T& a_data, std::span<const std::uint8_t> a_expected = {}) {
 		return detail::SafeWrite(Resolve(a_id, a_offset, {}), std::addressof(a_data), sizeof(T), a_expected);
 	}
 
-	template <Payload T>
-	bool safe_write(const RelocationEx& a_id, const OffsetEx& a_offset, const When& a_when, const T& a_data, std::span<const std::uint8_t> a_expected = {}) {
+	template <AddressSource Id, OffsetSource Off, Payload T>
+	bool safe_write(const Id& a_id, const Off& a_offset, const When& a_when, const T& a_data, std::span<const std::uint8_t> a_expected = {}) {
 		return detail::SafeWrite(Resolve(a_id, a_offset, a_when), std::addressof(a_data), sizeof(T), a_expected);
 	}
 }

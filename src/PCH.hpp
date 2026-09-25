@@ -103,8 +103,6 @@
 //This is tiresome
 #define GetModuleHandle GetModuleHandleW
 
-#include <ClibUtil/editorID.hpp>
-
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -112,17 +110,6 @@
 #include <spdlog/async.h>
 #include <spdlog/sinks/sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
-
-//Abseil - https://github.com/abseil/abseil-cpp
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
-#include <absl/container/inlined_vector.h>
-#include <absl/container/node_hash_map.h>
-#include <absl/container/node_hash_set.h>
-#include <absl/container/btree_map.h>
-#include <absl/container/btree_set.h>
-
-#include <reflect>
 
 namespace logger = SKSE::log;
 using namespace std::literals;
@@ -136,9 +123,5 @@ using namespace REL::literals;
 //Global Includes
 
 #include "Constants.hpp"
-
-#include "Util/Singleton.hpp"
-#include "Util/Random.hpp"
-#include "Util/Text/Text.hpp"
 #include "Util/Windows/MessageBox.hpp"
-#include "Util/Config/Ini.hpp"
+

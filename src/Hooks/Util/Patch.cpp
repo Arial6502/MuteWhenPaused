@@ -19,23 +19,6 @@ namespace Hooks::detail {
 		return { a_address, a_address ? std::format("0x{:X}", a_address) : "a null address" };
 	}
 
-	Site Resolve(const RelocationEx& a_id, const OffsetEx& a_offset, const When& a_when) {
-		const auto epoch = CurrentEpoch();
-
-		if (!a_when.Matches()) {
-			return { 0, std::format("limited to {}, running {}", a_when.Describe(), REL::Module::get().version().string(".")) };
-		}
-
-		const auto id = a_id.Get(epoch);
-		if (!id) {
-			return { 0, std::format("no ID for {}", ToString(epoch)) };
-		}
-
-		const auto offset = a_offset.Get(epoch);
-		const auto address = REL::ID(id).address() + offset;
-		return { address, std::format("ID {} + 0x{:X} ({}) = 0x{:X}", id, offset, ToString(epoch), address) };
-	}
-
 	bool InText(std::uintptr_t a_address) {
 		const auto text = REL::Module::get().segment(REL::Segment::textx);
 		return a_address >= text.address() && a_address < text.address() + text.size();
