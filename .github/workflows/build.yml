@@ -1,0 +1,81 @@
+name: Build Plugin
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'vcpkg.json'
+      - 'vcpkg-configuration.json'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'vcpkg.json'
+      - 'vcpkg-configuration.json'
+      - '.github/workflows/build.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    # Pinned to the VS 2026 image (MSVC 14.51, the toolset used locally) so a label change cannot swap the compiler.
+    runs-on: windows-2025-vs2026
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: 'x64'
+
+      # vcpkg binary cache. Archives are keyed by ABI hash, so restoring an older cache is always safe.
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'cmake/ports/**') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
+      - name: Get runner image version
+        id: image
+        run: echo "version=$env:ImageVersion" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      # Exact key only: a build directory is reused solely by an identical configuration on the same image,
+      # so a stale CMakeCache.txt (old compiler path, old options) can never be restored.
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: cmake-build-${{ runner.os }}-${{ steps.image.outputs.version }}-${{ hashFiles('CMakeLists.txt', 'cmake/**', 'CMakePresets.json', 'vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11.5
+        with:
+          vcpkgJsonGlob: vcpkg.json
+        env:
+          VCPKG_BINARY_SOURCES: 'clear;files,~/AppData/Local/vcpkg,readwrite'
+
+      - name: Build
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: config-release
+          buildPreset: build-release
+
+      - name: Upload Distribution Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-package
+          path: distribution/Package-*
